@@ -2,18 +2,12 @@ import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
 import { RestApiStack } from "./rest-api-stack";
 import { WebsiteHostingStack } from "./website-hosting-stack";
-import * as codecommit from "aws-cdk-lib/aws-codecommit";
 import * as pipelines from "aws-cdk-lib/pipelines";
 import * as iam from "aws-cdk-lib/aws-iam";
 
 export class CoffeeListingAppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-
-    let repository = new codecommit.Repository(this, "Repository", {
-      repositoryName: `Repository-${this.stackName}`,
-      description: "Code Repository for Coffee Listing",
-    });
 
     let appStage = new AppStage(this, "AppStage", { stackName: this.stackName });
 
@@ -22,7 +16,12 @@ export class CoffeeListingAppStack extends cdk.Stack {
       selfMutation: false,
       publishAssetsInParallel: false,
       synth: new pipelines.ShellStep("Synth", {
-        input: pipelines.CodePipelineSource.codeCommit(repository, "main"),
+        input: pipelines.CodePipelineSource.gitHub('hosamshahin/extended-cdk-workshop-coffee-listing-app', 'main', {
+          authentication: cdk.SecretValue.secretsManager(
+            'lambda_container_cdk_pipeline_github', {
+            jsonField: 'github'
+          })
+        }),
         installCommands: ["npm i -g npm@9.9.2"],
         commands: ["npm ci", "npm run build", "npx cdk synth"],
       }),
@@ -63,10 +62,6 @@ export class CoffeeListingAppStack extends cdk.Stack {
       ],
     });
 
-    new cdk.CfnOutput(this, "RepositoryCloneUrlHttp", {
-      value: repository.repositoryCloneUrlHttp,
-      description: "Code Repository Clone Url Http",
-    });
   }
 }
 
