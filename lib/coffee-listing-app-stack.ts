@@ -15,9 +15,7 @@ export class CoffeeListingAppStack extends cdk.Stack {
       description: "Code Repository for Coffee Listing",
     });
 
-    let appStage = new AppStage(this, "AppStage", {
-      stackName: this.stackName,
-    });
+    let appStage = new AppStage(this, "AppStage", { stackName: this.stackName });
 
     let pipeline = new pipelines.CodePipeline(this, "Pipeline", {
       pipelineName: `Pipeline-${this.stackName}`,
@@ -25,7 +23,7 @@ export class CoffeeListingAppStack extends cdk.Stack {
       publishAssetsInParallel: false,
       synth: new pipelines.ShellStep("Synth", {
         input: pipelines.CodePipelineSource.codeCommit(repository, "main"),
-        installCommands: ["npm i -g npm@latest"],
+        installCommands: ["npm i -g npm@9.9.2"],
         commands: ["npm ci", "npm run build", "npx cdk synth"],
       }),
       codeBuildDefaults: {
@@ -52,6 +50,7 @@ export class CoffeeListingAppStack extends cdk.Stack {
             SNOWPACK_PUBLIC_API_IMAGES_URL: appStage.cfnOutApiImagesUrl,
             BUCKET_NAME: appStage.cfnOutBucketName,
             DISTRIBUTION_ID: appStage.cfnOutDistributionId,
+            SNOWPACK_PUBLIC_API_LIKES_URL: appStage.cfnOutApiLikesUrl
           },
           commands: [
             "cd frontend",
@@ -79,6 +78,7 @@ class AppStage extends cdk.Stage {
   public readonly cfnOutCloudFrontUrl: cdk.CfnOutput;
   public readonly cfnOutBucketName: cdk.CfnOutput;
   public readonly cfnOutDistributionId: cdk.CfnOutput;
+  public readonly cfnOutApiLikesUrl: cdk.CfnOutput;
 
   constructor(scope: Construct, id: string, props: AppStageProps) {
     super(scope, id, props);
@@ -95,5 +95,6 @@ class AppStage extends cdk.Stage {
     this.cfnOutCloudFrontUrl = websiteHosting.cfnOutCloudFrontUrl;
     this.cfnOutBucketName = websiteHosting.cfnOutBucketName;
     this.cfnOutDistributionId = websiteHosting.cfnOutDistributionId;
+    this.cfnOutApiLikesUrl = restApi.cfnOutApiLikesUrl;
   }
 }

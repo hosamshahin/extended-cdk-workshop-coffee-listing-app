@@ -1,0 +1,265 @@
+Resources:
+    MainVPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: 10.0.0.0/16
+        EnableDnsHostnames: true
+        EnableDnsSupport: true
+        InstanceTenancy: default
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC
+    VPCPublicSubnet1:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.0.0/18
+        VpcId:
+          Ref: MainVPC
+        AvailabilityZone:
+          Fn::Select:
+            - 0
+            - Fn::GetAZs: ''
+        MapPublicIpOnLaunch: true
+        Tags:
+          - Key: subnet-name
+            Value: Public
+          - Key: subnet-type
+            Value: Public
+          - Key: Name
+            Value: ExistingStack/VPC/PublicSubnet1
+    VPCPublicSubnet1RouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: MainVPC
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC/PublicSubnet1
+    VPCPublicSubnet1RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: VPCPublicSubnet1RouteTable
+        SubnetId:
+          Ref: VPCPublicSubnet1
+    VPCPublicSubnet1DefaultRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: VPCPublicSubnet1RouteTable
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:
+          Ref: VPCIGW
+      DependsOn:
+        - VPCVPCGWA
+    VPCPublicSubnet1EIP:
+      Type: AWS::EC2::EIP
+      Properties:
+        Domain: vpc
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC/PublicSubnet1
+    VPCPublicSubnet1NATGateway:
+      Type: AWS::EC2::NatGateway
+      Properties:
+        SubnetId:
+          Ref: VPCPublicSubnet1
+        AllocationId:
+          Fn::GetAtt:
+            - VPCPublicSubnet1EIP
+            - AllocationId
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC/PublicSubnet1
+    VPCPublicSubnet2Subnet:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.64.0/18
+        VpcId:
+          Ref: MainVPC
+        AvailabilityZone:
+          Fn::Select:
+            - 1
+            - Fn::GetAZs: ''
+        MapPublicIpOnLaunch: true
+        Tags:
+          - Key: subnet-name
+            Value: Public
+          - Key: subnet-type
+            Value: Public
+          - Key: Name
+            Value: ExistingStack/VPC/PublicSubnet2
+    VPCPublicSubnet2RouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: MainVPC
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC/PublicSubnet2
+    VPCPublicSubnet2RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: VPCPublicSubnet2RouteTable
+        SubnetId:
+          Ref: VPCPublicSubnet2Subnet
+    VPCPublicSubnet2DefaultRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: VPCPublicSubnet2RouteTable
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:
+          Ref: VPCIGW
+      DependsOn:
+        - VPCVPCGWA
+    VPCPublicSubnet2EIP:
+      Type: AWS::EC2::EIP
+      Properties:
+        Domain: vpc
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC/PublicSubnet2
+    VPCPublicSubnet2NATGateway:
+      Type: AWS::EC2::NatGateway
+      Properties:
+        SubnetId:
+          Ref: VPCPublicSubnet2Subnet
+        AllocationId:
+          Fn::GetAtt:
+            - VPCPublicSubnet2EIP
+            - AllocationId
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC/PublicSubnet2
+    VPCPrivateSubnet1Subnet:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.128.0/18
+        VpcId:
+          Ref: MainVPC
+        AvailabilityZone:
+          Fn::Select:
+            - 0
+            - Fn::GetAZs: ''
+        MapPublicIpOnLaunch: false
+        Tags:
+          - Key: subnet-name
+            Value: Private
+          - Key: subnet-type
+            Value: Private
+          - Key: Name
+            Value: ExistingStack/VPC/PrivateSubnet1
+    VPCPrivateSubnet1RouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: MainVPC
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC/PrivateSubnet1
+    VPCPrivateSubnet1RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: VPCPrivateSubnet1RouteTable
+        SubnetId:
+          Ref: VPCPrivateSubnet1Subnet
+    VPCPrivateSubnet1DefaultRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: VPCPrivateSubnet1RouteTable
+        DestinationCidrBlock: 0.0.0.0/0
+        NatGatewayId:
+          Ref: VPCPublicSubnet1NATGateway
+    VPCPrivateSubnet2Subnet:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.192.0/18
+        VpcId:
+          Ref: MainVPC
+        AvailabilityZone:
+          Fn::Select:
+            - 1
+            - Fn::GetAZs: ''
+        MapPublicIpOnLaunch: false
+        Tags:
+          - Key: subnet-name
+            Value: Private
+          - Key: subnet-type
+            Value: Private
+          - Key: Name
+            Value: ExistingStack/VPC/PrivateSubnet2
+    VPCPrivateSubnet2RouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: MainVPC
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC/PrivateSubnet2
+    VPCPrivateSubnet2RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: VPCPrivateSubnet2RouteTable
+        SubnetId:
+          Ref: VPCPrivateSubnet2Subnet
+    VPCPrivateSubnet2DefaultRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: VPCPrivateSubnet2RouteTable
+        DestinationCidrBlock: 0.0.0.0/0
+        NatGatewayId:
+          Ref: VPCPublicSubnet2NATGateway
+    VPCIGW:
+      Type: AWS::EC2::InternetGateway
+      Properties:
+        Tags:
+          - Key: Name
+            Value: ExistingStack/VPC
+    VPCVPCGWA:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+        VpcId:
+          Ref: MainVPC
+        InternetGatewayId:
+          Ref: VPCIGW
+    VPCDynamoDbEndpoint:
+      Type: AWS::EC2::VPCEndpoint
+      Properties:
+        ServiceName:
+          Fn::Join:
+            - ''
+            - - com.amazonaws.
+              - Ref: AWS::Region
+              - .dynamodb
+        VpcId:
+          Ref: MainVPC
+        PolicyDocument:
+          Statement:
+            - Action: dynamodb:*
+              Effect: Allow
+              Principal:
+                AWS: '*'
+              Resource: '*'
+          Version: '2012-10-17'
+        RouteTableIds:
+          - Ref: VPCPrivateSubnet1RouteTable
+          - Ref: VPCPrivateSubnet2RouteTable
+          - Ref: VPCPublicSubnet1RouteTable
+          - Ref: VPCPublicSubnet2RouteTable
+        VpcEndpointType: Gateway
+    LikesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        KeySchema:
+          - AttributeName: imageKeyS3
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: imageKeyS3
+            AttributeType: S
