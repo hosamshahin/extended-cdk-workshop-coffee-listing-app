@@ -9,6 +9,7 @@ import { GithubWebhook } from '@cloudcomponents/cdk-github-webhook';
 import { SecretKey } from '@cloudcomponents/cdk-secret-key';
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaNodeJs from "aws-cdk-lib/aws-lambda-nodejs";
+import * as python from '@aws-cdk/aws-lambda-python-alpha';
 import { GenerateUUID } from './generate-uuid';
 
 export class CoffeeListingAppStack extends cdk.Stack {
@@ -76,15 +77,24 @@ export class CoffeeListingAppStack extends cdk.Stack {
       ],
     });
 
-    // lambda function
-    let myFunction = new lambdaNodeJs.NodejsFunction(this, "myFunction", {
-      entry: require.resolve("../lambdas/github-webhook"),
-      environment: {
-        WEBHOOK_SECRET: webhookSecretValue
-      }
+    const myFunctionPy = new python.PythonFunction(this, 'myFunctionPy', {
+      entry: 'lambdas/github_webhook_handler',
+      runtime: lambda.Runtime.PYTHON_3_9,
+      index: 'index.py',
+      // role: stepFunctionInvokerExecutionRole,
+      tracing: lambda.Tracing.ACTIVE,
     });
 
-    const myFunctionUrl = myFunction.addFunctionUrl({
+
+    // lambda function
+    // let myFunction = new lambdaNodeJs.NodejsFunction(this, "myFunction", {
+    //   entry: require.resolve("../lambdas/github-webhook"),
+    //   environment: {
+    //     WEBHOOK_SECRET: webhookSecretValue
+    //   }
+    // });
+
+    const myFunctionUrl = myFunctionPy.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
       cors: {
         allowedOrigins: ['*'],

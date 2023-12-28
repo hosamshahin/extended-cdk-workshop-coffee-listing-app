@@ -1,0 +1,28 @@
+{
+    "Records": [
+        {
+            "awsRegion": "us-east-1",
+            "codecommit": {
+                "references": [
+                    {
+                        "commit": "3b7387c9c22ce2b28f3a62ba75cf25b713580244",
+                        "created": true,
+                        "ref": "refs/heads/fb2"
+                    }
+                ]
+            },
+            "customData": null,
+            "eventId": "c4486734-7a70-4301-b144-b5b477587532",
+            "eventName": "ReferenceChanges",
+            "eventPartNumber": 1,
+            "eventSource": "aws:codecommit",
+            "eventSourceARN": "arn:aws:codecommit:us-east-1:114752328202:saas-boost-infra-bk",
+            "eventTime": "2023-05-24T02:24:17.235+0000",
+            "eventTotalParts": 1,
+            "eventTriggerConfigId": "6551af92-c9ae-462d-8183-abd3a0e476a6",
+            "eventTriggerName": "Trigger deployment step function - saas-cicd-dev-pipeline",
+            "eventVersion": "1.0",
+            "userIdentityARN": "arn:aws:iam::114752328202:user/hshahin"
+        }
+    ]
+}

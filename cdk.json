@@ -1,5 +1,6 @@
 {
   "app": "npx ts-node --prefer-ts-exts bin/coffee-listing-app.ts",
+  "requireApproval": "never",
   "context": {
     "@aws-cdk/core:newStyleStackSynthesis": true
   }
