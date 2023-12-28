@@ -9,10 +9,20 @@ import { GithubWebhook } from '@cloudcomponents/cdk-github-webhook';
 import { SecretKey } from '@cloudcomponents/cdk-secret-key';
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaNodeJs from "aws-cdk-lib/aws-lambda-nodejs";
+import { GenerateUUID } from './generate-uuid';
 
 export class CoffeeListingAppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const webhookSecret = new GenerateUUID(this, 'ApiKeyOperationUsersUUID').node.defaultChild as cdk.CustomResource;
+    const webhookSecretValue = webhookSecret.getAtt('uuid').toString();
+    new cdk.CfnOutput(this, 'webhookSecretOutput',
+      {
+        exportName: `webhookSecret`,
+        value: webhookSecretValue
+      }
+    );
 
     let appStage = new AppStage(this, "AppStage", { stackName: this.stackName });
     let secretValue: cdk.SecretValue = cdk.SecretValue.secretsManager('lambda_container_cdk_pipeline_github')
@@ -69,6 +79,9 @@ export class CoffeeListingAppStack extends cdk.Stack {
     // lambda function
     let myFunction = new lambdaNodeJs.NodejsFunction(this, "myFunction", {
       entry: require.resolve("../lambdas/github-webhook"),
+      environment: {
+        WEBHOOK_SECRET: webhookSecretValue
+      }
     });
 
     const myFunctionUrl = myFunction.addFunctionUrl({
