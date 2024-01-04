@@ -5,37 +5,45 @@ import { RestApiStack } from "./rest-api-stack";
 import { WebsiteHostingStack } from "./website-hosting-stack";
 import * as pipelines from "aws-cdk-lib/pipelines";
 import * as iam from "aws-cdk-lib/aws-iam";
-import { GithubWebhook } from '@cloudcomponents/cdk-github-webhook';
-import { SecretKey } from '@cloudcomponents/cdk-secret-key';
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as lambdaNodeJs from "aws-cdk-lib/aws-lambda-nodejs";
-import { GenerateUUID } from './generate-uuid';
+// import { GithubWebhook } from '@cloudcomponents/cdk-github-webhook';
+// import { SecretKey } from '@cloudcomponents/cdk-secret-key';
+// import * as lambda from "aws-cdk-lib/aws-lambda";
+// import * as lambdaNodeJs from "aws-cdk-lib/aws-lambda-nodejs";
+// import { GenerateUUID } from './generate-uuid';
 
 export class CoffeeListingAppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const webhookSecret = new GenerateUUID(this, 'ApiKeyOperationUsersUUID').node.defaultChild as cdk.CustomResource;
-    const webhookSecretValue = webhookSecret.getAtt('uuid').toString();
-    new cdk.CfnOutput(this, 'webhookSecretOutput',
-      {
-        exportName: `webhookSecret`,
-        value: webhookSecretValue
-      }
-    );
+    // const webhookSecret = new GenerateUUID(this, 'ApiKeyOperationUsersUUID').node.defaultChild as cdk.CustomResource;
+    // const webhookSecretValue = webhookSecret.getAtt('uuid').toString();
+    // new cdk.CfnOutput(this, 'webhookSecretOutput',
+    //   {
+    //     exportName: `webhookSecret`,
+    //     value: webhookSecretValue
+    //   }
+    // );
 
     let appStage = new AppStage(this, "AppStage", { stackName: this.stackName });
-    let secretValue: cdk.SecretValue = cdk.SecretValue.secretsManager('lambda_container_cdk_pipeline_github')
-    let secret: sm.ISecret = sm.Secret.fromSecretCompleteArn(this, 'secret', 'arn:aws:secretsmanager:us-east-1:114752328202:secret:lambda_container_cdk_pipeline_github-VH6KT0')
+    // let secretValue: cdk.SecretValue = cdk.SecretValue.secretsManager('lambda_container_cdk_pipeline_github')
+    // let secret: sm.ISecret = sm.Secret.fromSecretCompleteArn(this, 'secret', 'arn:aws:secretsmanager:us-east-1:114752328202:secret:lambda_container_cdk_pipeline_github-VH6KT0')
+
+    const config = this.node.tryGetContext("config")
+    // const accounts = config['accounts']
+    const connectionArn = config['connection_arn']
+    const input: cdk.pipelines.IFileSetProducer = pipelines.CodePipelineSource.connection(
+      `${config['githubOrg']}/${config['githubRepo']}`,
+      config['githubBranch'],
+      { connectionArn }
+    )
+
 
     let pipeline = new pipelines.CodePipeline(this, "Pipeline", {
       pipelineName: `Pipeline-${this.stackName}`,
       selfMutation: false,
       publishAssetsInParallel: false,
       synth: new pipelines.ShellStep("Synth", {
-        input: pipelines.CodePipelineSource.gitHub('hosamshahin/extended-cdk-workshop-coffee-listing-app', 'main', {
-          authentication: secretValue
-        }),
+        input,
         installCommands: ["npm i -g npm@9.9.2"],
         commands: ["npm ci", "npm run build", "npx cdk synth"],
       }),
@@ -77,31 +85,31 @@ export class CoffeeListingAppStack extends cdk.Stack {
     });
 
     // lambda function
-    let myFunction = new lambdaNodeJs.NodejsFunction(this, "myFunction", {
-      entry: require.resolve("../lambdas/github-webhook"),
-      environment: {
-        WEBHOOK_SECRET: webhookSecretValue
-      }
-    });
+    // let myFunction = new lambdaNodeJs.NodejsFunction(this, "myFunction", {
+    //   entry: require.resolve("../lambdas/github-webhook"),
+    //   environment: {
+    //     WEBHOOK_SECRET: webhookSecretValue
+    //   }
+    // });
 
-    const myFunctionUrl = myFunction.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.NONE,
-      cors: {
-        allowedOrigins: ['*'],
-      }
-    });
+    // const myFunctionUrl = myFunction.addFunctionUrl({
+    //   authType: lambda.FunctionUrlAuthType.NONE,
+    //   cors: {
+    //     allowedOrigins: ['*'],
+    //   }
+    // });
 
-    new GithubWebhook(this, 'GithubWebhook', {
-      githubApiToken: SecretKey.fromSecretsManager(secret),
-      githubRepoUrl: 'https://github.com/hosamshahin/extended-cdk-workshop-coffee-listing-app',
-      payloadUrl: myFunctionUrl.url,
-      events: ['*'],
-      logLevel: 'debug',
-    });
+    // new GithubWebhook(this, 'GithubWebhook', {
+    //   githubApiToken: SecretKey.fromSecretsManager(secret),
+    //   githubRepoUrl: 'https://github.com/hosamshahin/extended-cdk-workshop-coffee-listing-app',
+    //   payloadUrl: myFunctionUrl.url,
+    //   events: ['*'],
+    //   logLevel: 'debug',
+    // });
 
-    new cdk.CfnOutput(this, 'FunctionUrl', {
-      value: myFunctionUrl.url,
-    });
+    // new cdk.CfnOutput(this, 'FunctionUrl', {
+    //   value: myFunctionUrl.url,
+    // });
 
   }
 }
