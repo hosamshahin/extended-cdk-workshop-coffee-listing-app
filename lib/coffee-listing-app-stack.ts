@@ -37,7 +37,6 @@ export class CoffeeListingAppStack extends cdk.Stack {
       { connectionArn }
     )
 
-
     let pipeline = new pipelines.CodePipeline(this, "Pipeline", {
       pipelineName: `Pipeline-${this.stackName}`,
       selfMutation: false,
