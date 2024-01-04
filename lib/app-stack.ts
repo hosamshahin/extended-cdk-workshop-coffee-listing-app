@@ -1,27 +1,71 @@
-import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
-import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import * as lambdaNodeJs from "aws-cdk-lib/aws-lambda-nodejs";
+import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
-// import * as cfnInclude from "aws-cdk-lib/cloudformation-include";
-// import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-// import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as iam from "aws-cdk-lib/aws-iam";
+import * as cloudfrontOrigins from "aws-cdk-lib/aws-cloudfront-origins";
+import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as lambdaNodeJs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as dynamo from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from "aws-cdk-lib/aws-iam";
 
-interface RestApiStackProps extends cdk.StackProps {
-  bucket: s3.Bucket;
-  distribution: cloudfront.Distribution;
-}
-
-export class RestApiStack extends cdk.Stack {
+export class AppStack extends cdk.Stack {
+  public readonly bucket: s3.Bucket;
+  public readonly distribution: cloudfront.Distribution;
+  public readonly cfnOutCloudFrontUrl: cdk.CfnOutput;
+  public readonly cfnOutBucketName: cdk.CfnOutput;
+  public readonly cfnOutDistributionId: cdk.CfnOutput;
   public readonly restApi: apigateway.LambdaRestApi;
   public readonly cfnOutApiImagesUrl: cdk.CfnOutput;
   public readonly cfnOutApiLikesUrl: cdk.CfnOutput;
 
-  constructor(scope: Construct, id: string, props: RestApiStackProps) {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // Remediating AwsSolutions-S10 by enforcing SSL on the bucket.
+    this.bucket = new s3.Bucket(this, "Bucket", {
+      enforceSSL: true,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.POST],
+          allowedOrigins: ["*"],
+        },
+      ],
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true
+    });
+
+    this.distribution = new cloudfront.Distribution(this, "Distribution", {
+      defaultRootObject: "index.html",
+      defaultBehavior: {
+        origin: new cloudfrontOrigins.S3Origin(this.bucket, {
+          originPath: "/frontend",
+        }),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+      additionalBehaviors: {
+        "/uploads/*": {
+          origin: new cloudfrontOrigins.S3Origin(this.bucket, {
+            originPath: "/",
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+      },
+    });
+
+    this.cfnOutCloudFrontUrl = new cdk.CfnOutput(this, "CfnOutCloudFrontUrl", {
+      value: `https://${this.distribution.distributionDomainName}`,
+      description: "URL for CLOUDFRONT_URL in `frontend/.env` file",
+    });
+
+    this.cfnOutDistributionId = new cdk.CfnOutput(this, "CfnOutDistributionId", {
+      value: this.distribution.distributionId,
+      description: "CloudFront Distribution Id",
+    });
+
+    this.cfnOutBucketName = new cdk.CfnOutput(this, "CfnOutBucketName", {
+      value: this.bucket.bucketName,
+      description: "Website Hosting Bucket Name",
+    });
 
     const likesTable = new dynamo.Table(this, 'LikesTable', {
       billingMode: dynamo.BillingMode.PAY_PER_REQUEST,
@@ -34,12 +78,12 @@ export class RestApiStack extends cdk.Stack {
     let lambdaApiHandlerPublic = new lambdaNodeJs.NodejsFunction(this, "ApiHandlerPublic", {
       entry: require.resolve("../lambdas/coffee-listing-api-public"),
       environment: {
-        BUCKET_NAME: props.bucket.bucketName,
+        BUCKET_NAME: this.bucket.bucketName,
         BUCKER_UPLOAD_FOLDER_NAME: "uploads",
       },
     });
 
-    props.bucket.grantReadWrite(lambdaApiHandlerPublic);
+    this.bucket.grantReadWrite(lambdaApiHandlerPublic);
 
     let lambdaApiHandlerPrivate = new lambdaNodeJs.NodejsFunction(this, "ApiHandlerPrivate", {
       entry: require.resolve("../lambdas/coffee-listing-api-private"),
@@ -66,7 +110,6 @@ export class RestApiStack extends cdk.Stack {
         allowMethods: apigateway.Cors.ALL_METHODS,
       },
     });
-
 
     apiImages.addMethod("GET");
     apiImages.addMethod("POST");

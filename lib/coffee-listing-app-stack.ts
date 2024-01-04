@@ -1,7 +1,6 @@
 import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
-import { RestApiStack } from "./rest-api-stack";
-import { WebsiteHostingStack } from "./website-hosting-stack";
+import { AppStack } from "./app-stack";
 import * as pipelines from "aws-cdk-lib/pipelines";
 import * as iam from "aws-cdk-lib/aws-iam";
 
@@ -80,20 +79,15 @@ class AppStage extends cdk.Stage {
 
   constructor(scope: Construct, id: string, props: AppStageProps) {
     super(scope, id, props);
-    let websiteHosting = new WebsiteHostingStack(this, "WebsiteHostingStack", {
-      stackName: `WebsiteHostingStack-${props.stackName}`,
+
+    let appStack = new AppStack(this, "AppStack", {
+      stackName: `AppStack-${props.stackName}`,
     });
 
-    let restApi = new RestApiStack(this, "RestApiStack", {
-      stackName: `RestApiStack-${props.stackName}`,
-      bucket: websiteHosting.bucket,
-      distribution: websiteHosting.distribution,
-    });
-
-    this.cfnOutApiImagesUrl = restApi.cfnOutApiImagesUrl;
-    this.cfnOutCloudFrontUrl = websiteHosting.cfnOutCloudFrontUrl;
-    this.cfnOutBucketName = websiteHosting.cfnOutBucketName;
-    this.cfnOutDistributionId = websiteHosting.cfnOutDistributionId;
-    this.cfnOutApiLikesUrl = restApi.cfnOutApiLikesUrl;
+    this.cfnOutApiImagesUrl = appStack.cfnOutApiImagesUrl;
+    this.cfnOutCloudFrontUrl = appStack.cfnOutCloudFrontUrl;
+    this.cfnOutBucketName = appStack.cfnOutBucketName;
+    this.cfnOutDistributionId = appStack.cfnOutDistributionId;
+    this.cfnOutApiLikesUrl = appStack.cfnOutApiLikesUrl;
   }
 }
