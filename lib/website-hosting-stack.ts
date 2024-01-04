@@ -15,7 +15,7 @@ export class WebsiteHostingStack extends cdk.Stack {
     super(scope, id, props);
 
     // Remediating AwsSolutions-S10 by enforcing SSL on the bucket.
-    let bucket = new s3.Bucket(this, "Bucket", {
+    this.bucket = new s3.Bucket(this, "Bucket", {
       enforceSSL: true,
       cors: [
         {
@@ -27,36 +27,36 @@ export class WebsiteHostingStack extends cdk.Stack {
       autoDeleteObjects: true
     });
 
-    let distribution = new cloudfront.Distribution(this, "Distribution", {
+    this.distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultRootObject: "index.html",
       defaultBehavior: {
-        origin: new cloudfrontOrigins.S3Origin(bucket, {
+        origin: new cloudfrontOrigins.S3Origin(this.bucket, {
           originPath: "/frontend",
         }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       },
       additionalBehaviors: {
         "/uploads/*": {
-          origin: new cloudfrontOrigins.S3Origin(bucket, {
+          origin: new cloudfrontOrigins.S3Origin(this.bucket, {
             originPath: "/",
           }),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
       },
     });
-    this.bucket = bucket;
-    this.distribution = distribution;
 
     this.cfnOutCloudFrontUrl = new cdk.CfnOutput(this, "CfnOutCloudFrontUrl", {
-      value: `https://${distribution.distributionDomainName}`,
+      value: `https://${this.distribution.distributionDomainName}`,
       description: "URL for CLOUDFRONT_URL in `frontend/.env` file",
     });
+
     this.cfnOutDistributionId = new cdk.CfnOutput(this, "CfnOutDistributionId", {
-      value: distribution.distributionId,
+      value: this.distribution.distributionId,
       description: "CloudFront Distribution Id",
     });
+
     this.cfnOutBucketName = new cdk.CfnOutput(this, "CfnOutBucketName", {
-      value: bucket.bucketName,
+      value: this.bucket.bucketName,
       description: "Website Hosting Bucket Name",
     });
   }

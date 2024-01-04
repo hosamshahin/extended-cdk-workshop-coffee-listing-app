@@ -83,6 +83,7 @@ class AppStage extends cdk.Stage {
     let websiteHosting = new WebsiteHostingStack(this, "WebsiteHostingStack", {
       stackName: `WebsiteHostingStack-${props.stackName}`,
     });
+
     let restApi = new RestApiStack(this, "RestApiStack", {
       stackName: `RestApiStack-${props.stackName}`,
       bucket: websiteHosting.bucket,
